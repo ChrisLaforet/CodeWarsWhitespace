@@ -68,7 +68,11 @@ public class WhitespaceInterpreter {
 	}
 	
 	private static int extractNumber(Stack<Character> instructions) {
-		boolean isNegative = instructions.pop() == TAB;
+		char sign = instructions.pop();
+		if (sign == LF) {
+			throw new RuntimeException("Numbers must start with a sign at minimum");
+		}
+		boolean isNegative = sign == TAB;
 		
 		final StringBuilder binary = new StringBuilder();
 		while (true) {
@@ -78,7 +82,8 @@ public class WhitespaceInterpreter {
 			}
 			binary.append(bit == TAB ? '1' : '0');
 		}
-		int number = Integer.parseInt(binary.toString(), 2);
+		// A number expression [sign][terminal] will be treated as zero
+		int number = binary.isEmpty() ? 0 : Integer.parseInt(binary.toString(), 2);
 		return number * (isNegative ? -1 : 1);
 	}
 	
@@ -90,20 +95,34 @@ public class WhitespaceInterpreter {
 		} else if (command == TAB) {
 			char subCommand = instructions.pop();
 			if (subCommand == SPACE) {
-				
+				int index = extractNumber(instructions);	// Duplicate the nth value from the top of the stack and push onto the stack
+				int stackIndex = (stack.size() - 1) - index;
+				stack.push(stack.get(stackIndex));
 			} else if (subCommand == LF) {
-				
+				int itemCount = extractNumber(instructions);	// Discard the top n values below the top of the stack from the stack
+				int top = stack.pop();
+				if (itemCount >= stack.size()) {
+					stack.clear();
+				} else {
+					for (int count = 0; count < itemCount; count++) {
+						stack.pop();
+					}
+				}
+				stack.push(top);
 			} else {
-				throw new IllegalStateException("SPACE TAB TAB is invalid IMP sequence");
+				throw new RuntimeException("SPACE TAB TAB is invalid IMP sequence");
 			}
 		} else if (command == LF) {
 			char subCommand = instructions.pop();
 			if (subCommand == SPACE) {
-				
+				stack.push(stack.peek());		// duplicate top of stack
 			} else if (subCommand == LF) {
-				
+				stack.pop();	// discard top of stack
 			} else {
-				
+				int first = stack.pop();		// swap top 2 items in stack
+				int second = stack.pop();
+				stack.push(first);
+				stack.push(second);
 			}
 		}
 	}
@@ -125,7 +144,7 @@ public class WhitespaceInterpreter {
 		} else if (command == LF) {
 			char subCommand = instructions.pop();
 			if (subCommand == SPACE) {
-				throw new IllegalStateException("LF LF SPACE is invalid IMP sequence");
+				throw new RuntimeException("LF LF SPACE is invalid IMP sequence");
 			} else if (subCommand == LF) {
 				return true;
 			} else {
@@ -146,7 +165,7 @@ public class WhitespaceInterpreter {
 			if (subCommand == SPACE) {
 				
 			} else if (subCommand == LF) {
-				throw new IllegalStateException("TAB SPACE LF is invalid IMP sequence");
+				throw new RuntimeException("TAB SPACE LF is invalid IMP sequence");
 			} else {
 			}
 		} else if (command == LF) {
@@ -154,7 +173,7 @@ public class WhitespaceInterpreter {
 			if (subCommand == SPACE) {
 				processTabLFSpace(instructions, stack, output);
 			} else if (subCommand == LF) {
-				throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
+				throw new RuntimeException("TAB LF LF is invalid IMP sequence");
 
 			} else {
 				
@@ -170,7 +189,7 @@ public class WhitespaceInterpreter {
 		} else if (opcode == TAB) {
 			output.append(Integer.toString(stack.pop()));
 		} else {
-			throw new IllegalStateException("TAB LF Space LF is invalid IMP sequence");
+			throw new RuntimeException("TAB LF Space LF is invalid IMP sequence");
 
 		}
 	}
