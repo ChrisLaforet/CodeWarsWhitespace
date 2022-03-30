@@ -73,4 +73,8 @@ public class WhitespaceInterpreterTest {
 		assertEquals("13", WhitespaceInterpreter.execute("   \t \t \n   \t\t\n\t   \t\n \t\n\n\n", null));
 	}
 
+	@Test
+	public void given10_when3Subtract_thenYields7() {
+		assertEquals("7", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t  \t\t\n \t\n\n\n", null));
+	}
 }
