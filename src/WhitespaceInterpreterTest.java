@@ -28,7 +28,6 @@ public class WhitespaceInterpreterTest {
 		}
 	}
 
-@Ignore	
 	@Test(expected = Exception.class)
 	public void testFlowEdge() {
 		WhitespaceInterpreter.execute("", null);
