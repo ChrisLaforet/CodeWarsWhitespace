@@ -83,7 +83,7 @@ public class WhitespaceInterpreter {
 			binary.append(bit == TAB ? '1' : '0');
 		}
 		// A number expression [sign][terminal] will be treated as zero
-		int number = binary.isEmpty() ? 0 : Integer.parseInt(binary.toString(), 2);
+		int number = binary.length() == 0 ? 0 : Integer.parseInt(binary.toString(), 2);
 		return number * (isNegative ? -1 : 1);
 	}
 	
@@ -159,11 +159,17 @@ public class WhitespaceInterpreter {
 			Map<Integer, Integer> heap, InputStream input, StringBuilder output) {
 		char command = instructions.pop();
 		if (command == SPACE) {
-			stack.push(extractNumber(instructions));
+			char subCommand = instructions.pop();
+			if (subCommand == SPACE) {
+				processTabSpaceSpace(instructions, stack, output);
+			} else if (subCommand == TAB) {
+				
+			} else {
+				
+			}
 		} else if (command == TAB) {
 			char subCommand = instructions.pop();
 			if (subCommand == SPACE) {
-				
 			} else if (subCommand == LF) {
 				throw new IllegalStateException("TAB SPACE LF is invalid IMP sequence");
 			} else {
@@ -191,6 +197,22 @@ public class WhitespaceInterpreter {
 		} else {
 			throw new IllegalStateException("TAB LF Space LF is invalid IMP sequence");
 
+		}
+	}
+	
+	private static void processTabSpaceSpace(Stack<Character> instructions, Stack<Integer> stack,
+			StringBuilder output) {
+		char opcode = instructions.pop();
+		if (opcode == SPACE) {
+			stack.push(stack.pop() + stack.pop());
+		} else if (opcode == TAB) {
+			int minuend = stack.pop();
+			int subtrahend = stack.pop();
+			stack.push(minuend - subtrahend);
+		} else {
+			int dividend = stack.pop();
+			int divisor = stack.pop();
+			stack.push(dividend / divisor);
 		}
 	}
 

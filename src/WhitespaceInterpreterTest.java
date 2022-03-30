@@ -67,5 +67,10 @@ public class WhitespaceInterpreterTest {
 			assertEquals(test[1], WhitespaceInterpreter.execute(test[0], null));
 		}
 	}
+	
+	@Test
+	public void given10_whenAddedTo3_thenYields13() {
+		assertEquals("13", WhitespaceInterpreter.execute("   \t \t \n   \t\t\n\t   \t\n \t\n\n\n", null));
+	}
 
 }
