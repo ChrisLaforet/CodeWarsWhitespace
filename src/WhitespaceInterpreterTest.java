@@ -74,7 +74,12 @@ public class WhitespaceInterpreterTest {
 	}
 
 	@Test
-	public void given10_when3Subtract_thenYields7() {
+	public void given10_when3IsSubtracted_thenYields7() {
 		assertEquals("7", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t  \t\t\n \t\n\n\n", null));
+	}
+	
+	@Test
+	public void given10_whenMultipledBy3_thenYields30() {
+		assertEquals("30", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t  \n\t\n \t\n\n\n", null));
 	}
 }

@@ -163,7 +163,7 @@ public class WhitespaceInterpreter {
 			if (subCommand == SPACE) {
 				processTabSpaceSpace(instructions, stack, output);
 			} else if (subCommand == TAB) {
-				
+				processTabSpaceTab(instructions, stack, output);
 			} else {
 				
 			}
@@ -210,9 +210,24 @@ public class WhitespaceInterpreter {
 			int subtrahend = stack.pop();
 			stack.push(minuend - subtrahend);
 		} else {
+			int multiplicand = stack.pop();
+			int multiplier = stack.pop();
+			stack.push(multiplicand * multiplier);
+		}
+	}
+	
+	
+	private static void processTabSpaceTab(Stack<Character> instructions, Stack<Integer> stack,
+			StringBuilder output) {
+		char opcode = instructions.pop();
+		if (opcode == SPACE) {
 			int dividend = stack.pop();
 			int divisor = stack.pop();
 			stack.push(dividend / divisor);
+		} else if (opcode == TAB) {
+
+		} else {
+
 		}
 	}
 
