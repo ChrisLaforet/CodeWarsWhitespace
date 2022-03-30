@@ -1,4 +1,6 @@
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
@@ -27,7 +29,6 @@ public class WhitespaceInterpreter {
 	  return unbleach(sb.toString());
   }
 
-	// solution
 	public static String execute(String code, InputStream input) {
 		if (code == null || code.isEmpty()) {
 			throw new IllegalStateException("Code is null");
@@ -35,6 +36,21 @@ public class WhitespaceInterpreter {
 		
 		final Stack<Character> instructions = prepareInstructionStream(code);
 		return execute(instructions, input);
+	}
+	
+	public static String execute(String code, InputStream input, OutputStream output) {
+	    final String response = execute(code, input);
+	    if (output != null) {
+	    	try {
+			    for (byte b : response.getBytes()) {
+			    	output.write(b);
+			    }
+			    output.flush();
+	    	} catch (IOException ex) {
+	    		throw new RuntimeException("Error writing to output stream");
+	    	}
+	    }
+	    return response;
 	}
 
 	private static Stack<Character> prepareInstructionStream(String code) {
