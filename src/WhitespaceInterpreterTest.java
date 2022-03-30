@@ -92,4 +92,10 @@ public class WhitespaceInterpreterTest {
 	public void given10_whenModuloDividedBy3_thenYields1() {
 		assertEquals("1", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t \t\t\t\n \t\n\n\n", null));
 	}
+	
+	@Test
+	public void given10_whenStoredAtAddress3AndPushedBackOnStack_thenYields10() {
+		assertEquals("10", WhitespaceInterpreter.execute("   \t\t\n   \t \t \n\t\t    \t\t\n\t\t\t\t\n \t\n\n\n", null));
+
+	}
 }

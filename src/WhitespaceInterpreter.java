@@ -170,9 +170,14 @@ public class WhitespaceInterpreter {
 		} else if (command == TAB) {
 			char subCommand = instructions.pop();
 			if (subCommand == SPACE) {
+				int value = stack.pop();
+				int address = stack.pop();
+				heap.put(address, value);
 			} else if (subCommand == LF) {
 				throw new IllegalStateException("TAB SPACE LF is invalid IMP sequence");
 			} else {
+				int address = stack.pop();
+				stack.push(heap.get(address));
 			}
 		} else if (command == LF) {
 			char subCommand = instructions.pop();
