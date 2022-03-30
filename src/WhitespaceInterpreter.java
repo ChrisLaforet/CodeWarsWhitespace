@@ -195,7 +195,7 @@ public class WhitespaceInterpreter {
 		} else if (opcode == TAB) {
 			output.append(Integer.toString(stack.pop()));
 		} else {
-			throw new IllegalStateException("TAB LF Space LF is invalid IMP sequence");
+			throw new IllegalStateException("TAB LF SPACE LF is invalid IMP sequence");
 
 		}
 	}
@@ -225,9 +225,11 @@ public class WhitespaceInterpreter {
 			int divisor = stack.pop();
 			stack.push(dividend / divisor);
 		} else if (opcode == TAB) {
-
+			int dividend = stack.pop();
+			int divisor = stack.pop();
+			stack.push(dividend % divisor);
 		} else {
-
+			throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
 		}
 	}
 
