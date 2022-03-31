@@ -82,7 +82,7 @@ public class WhitespaceInterpreter {
 		return output.toString();		
 	}
 	
-	private static int extractNumber(Code code) {
+	private static int extractNumber(ICode code) {
 		char sign = code.nextOpCode();
 		if (sign == LF) {
 			throw new IllegalStateException("Numbers must start with a sign at minimum");
@@ -102,7 +102,7 @@ public class WhitespaceInterpreter {
 		return number * (isNegative ? -1 : 1);
 	}
 	
-	private static String extractLabel(Code code) {
+	private static String extractLabel(ICode code) {
 		final StringBuilder label = new StringBuilder();
 		while (true) {
 			char ch = code.nextOpCode();
@@ -140,11 +140,12 @@ public class WhitespaceInterpreter {
 			} else if (subCommand == LF) {
 				int itemCount = extractNumber(code);	// Discard the top n values below the top of the stack from the stack
 				int top = stack.pop();
-				if (itemCount >= stack.size()) {
-					throw new IllegalStateException("Discard elements from stack underflow");
-				}
-				for (int count = 0; count < itemCount; count++) {
-					stack.pop();
+				if (itemCount < 0 || itemCount >= stack.size()) {
+					stack.clear();
+				} else {
+					for (int count = 0; count < itemCount; count++) {
+						stack.pop();
+					}
 				}
 				stack.push(top);
 			} else {
@@ -345,11 +346,115 @@ public class WhitespaceInterpreter {
 			throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
 		}
 	}
-
-
-	private static class Code {
+	
+	
+	interface ICode {
+		public char nextOpCode();
+		public boolean isCompleted();
+	}
+	
+	private static class CodeScanner implements ICode {
 		private List<Character> code = new ArrayList<>();
-		private Map<String, Integer> labels = new HashMap<>();
+		private int ip = 0;
+		
+		public CodeScanner(String opcodes) {
+			for (char opcode : opcodes.toCharArray()) {
+				code.add(opcode);
+			}
+		}
+		
+		@Override
+		public char nextOpCode() {
+			if (isCompleted()) {
+				throw new IllegalStateException("Request for opcode beyond code boundaries");
+			}
+			return code.get(ip++);
+		}
+
+		@Override
+		public boolean isCompleted() {
+			return ip >= code.size();
+		}
+		
+		public int getInstructionPointer() {
+			return ip;
+		}
+
+		
+		public Map<String, Integer> validateAndExtractLabels() {
+			final Map<String, Integer> labels = new HashMap<>();
+			while (!isCompleted()) {
+				char imp = nextOpCode();
+				char second = nextOpCode();
+				if (imp == SPACE) {
+					if (second == SPACE) {
+						extractNumber(this);
+					} else if (second == TAB) {
+						char third = nextOpCode();
+						if (third == TAB) {
+							throw new IllegalStateException("SPACE TAB TAB is invalid IMP sequence");
+						}
+						extractNumber(this);
+					} else {
+						nextOpCode();
+					}
+				} else if (imp == TAB) {
+					if (second == SPACE) {
+						char third = nextOpCode();
+						if (third == SPACE) {
+							nextOpCode();
+						} else if (third == TAB) {
+							char fourth = nextOpCode();
+							if (fourth == LF) {
+								throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
+							}
+						}
+					} else if (second == TAB) {
+						char third = nextOpCode();
+						if (third == LF) {
+							throw new IllegalStateException("TAB TAB LF is invalid IMP sequence");
+						}
+					} else {		// LF
+						char third = nextOpCode();
+						if (third == LF) {
+							throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
+						}
+						char fourth = nextOpCode();
+						if (fourth == LF) {
+							throw new IllegalStateException("TAB LF SPACE/TAB LF is invalid IMP sequence");
+						}
+					}
+				} else {	// LF
+					if (second == SPACE) {
+						char third = nextOpCode();
+						String label = extractLabel(this);
+						if (third == SPACE) {
+							if (labels.containsKey(label)) {
+								throw new IllegalStateException("Duplicated label found for " + label);
+							}
+							labels.put(label, getInstructionPointer());
+						} 
+					} else if (second == TAB) {
+						char third = nextOpCode();
+						if (third != LF) {
+							extractLabel(this);
+						}
+					} else {		// LF
+						char third = nextOpCode();
+						if (third != LF) {
+							throw new IllegalStateException("LF LF SPACE/TAB is invalid IMP sequence");
+						}
+					}
+				}
+			}
+			return labels;
+		}
+	}
+
+
+	private static class Code implements ICode {
+		private List<Character> code = new ArrayList<>();
+		private Map<String, Integer> labels;
 		private int ip = 0;
 		
 		private Stack<Integer> subStack = new Stack<>();
@@ -360,23 +465,11 @@ public class WhitespaceInterpreter {
 				code.add(opcode);
 			}
 			
-			extractPossibleLabels(opcodes);		
-		}
-
-		private void extractPossibleLabels(final String opcodes) {
-			int offset = 0;
-			while (true) {
-				int index = opcodes.indexOf(MARK_LABEL_SEQUENCE, offset);
-				if (index < 0) {
-					break;
-				}
-				String label = extractLabel(opcodes, index + MARK_LABEL_SEQUENCE.length());
-				labels.put(label, index + label.length() + MARK_LABEL_SEQUENCE.length() + 1);
-				
-				offset += MARK_LABEL_SEQUENCE.length();
-			}
+			CodeScanner scanner = new CodeScanner(opcodes);
+			labels = scanner.validateAndExtractLabels();
 		}
 		
+		@Override
 		public char nextOpCode() {
 			if (isCompleted()) {
 				throw new IllegalStateException("Request for opcode beyond code boundaries");
@@ -384,6 +477,7 @@ public class WhitespaceInterpreter {
 			return code.get(ip++);
 		}
 		
+		@Override
 		public boolean isCompleted() {
 			return ip >= code.size();
 		}
