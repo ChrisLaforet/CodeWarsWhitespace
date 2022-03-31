@@ -31,19 +31,19 @@ public class WhitespaceInterpreter {
 	}
 	
 	public static String execute(String code, InputStream input, OutputStream output) {
-		if (code == null || code.isEmpty()) {
-			throw new IllegalStateException("Code is null");
-		}
-
 		// preflush buffer
 		if (output != null) {
 			try {
 				output.flush();
 			} catch (IOException ex) {
-				throw new RuntimeException("Error writing to output stream");
+				throw new IllegalStateException("Error preflushing output stream");
 			}
 		}
-		
+
+		if (code == null || code.isEmpty()) {
+			throw new IllegalStateException("Code is null");
+		}
+
 		final Code instructions = new Code(code);
 		Reader reader = null;
 		if (input != null) {
@@ -205,7 +205,7 @@ public class WhitespaceInterpreter {
 			} else if (subCommand == TAB) {
 				processTabSpaceTab(code, stack);
 			} else {
-				
+				throw new IllegalStateException("TAB SPACE LF is invalid IMP sequence");
 			}
 		} else if (command == TAB) {
 			char subCommand = code.nextOpCode();
@@ -235,14 +235,14 @@ public class WhitespaceInterpreter {
 		output.append(string);
 	    if (outputStream != null) {
 	    	// I cannot believe the foolishness of depending on output for tests when
-	    	// an exceptional circumstance exists!  Oh well...
+	    	// an exceptional circumstance exists!  Oh well...stupid is as stupid does.
 	    	try {
 			    for (byte b : string.getBytes()) {
 			    	outputStream.write(b);
 			    }
 			    outputStream.flush();
 	    	} catch (IOException ex) {
-	    		throw new RuntimeException("Error writing to output stream");
+	    		throw new IllegalStateException("Error writing to output stream");
 	    	}
 	    }
 	}
@@ -351,6 +351,33 @@ public class WhitespaceInterpreter {
 		public char nextOpCode();
 		public boolean isCompleted();
 	}
+
+	private static class Label {
+		private String label;
+		private int ip;
+		private int declarations = 1;
+
+		public Label(String label, int ip) {
+			this.label = label;
+			this.ip = ip;
+		}
+
+		public void addDeclarationCount() {
+			++declarations;
+		}
+
+		public String getLabel() {
+			return label;
+		}
+
+		public int getIp() {
+			return ip;
+		}
+
+		public int getDeclarations() {
+			return declarations;
+		}
+	}
 	
 	private static class CodeScanner implements ICode {
 		private List<Character> code = new ArrayList<>();
@@ -365,7 +392,7 @@ public class WhitespaceInterpreter {
 		@Override
 		public char nextOpCode() {
 			if (isCompleted()) {
-				throw new IllegalStateException("Request for opcode beyond code boundaries");
+				return 0;
 			}
 			return code.get(ip++);
 		}
@@ -379,8 +406,8 @@ public class WhitespaceInterpreter {
 			return ip;
 		}
 
-		public Map<String, Integer> validateAndExtractLabels() {
-			final Map<String, Integer> labels = new HashMap<>();
+		public Map<String, Label> extractLabels() {
+			final Map<String, Label> labels = new HashMap<>();
 			while (!isCompleted()) {
 				char imp = nextOpCode();
 				char second = nextOpCode();
@@ -390,9 +417,10 @@ public class WhitespaceInterpreter {
 					} else if (second == TAB) {
 						char third = nextOpCode();
 						if (third == TAB) {
-							throw new IllegalStateException("SPACE TAB TAB is invalid IMP sequence");
+//							throw new IllegalStateException("SPACE TAB TAB is invalid IMP sequence");
+						} else {
+							extractNumber(this);
 						}
-						extractNumber(this);
 					} else {
 						nextOpCode();
 					}
@@ -404,22 +432,23 @@ public class WhitespaceInterpreter {
 						} else if (third == TAB) {
 							char fourth = nextOpCode();
 							if (fourth == LF) {
-								throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
+//								throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
 							}
 						}
 					} else if (second == TAB) {
 						char third = nextOpCode();
 						if (third == LF) {
-							throw new IllegalStateException("TAB TAB LF is invalid IMP sequence");
+//							throw new IllegalStateException("TAB TAB LF is invalid IMP sequence");
 						}
 					} else {		// LF
 						char third = nextOpCode();
 						if (third == LF) {
-							throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
-						}
-						char fourth = nextOpCode();
-						if (fourth == LF) {
-							throw new IllegalStateException("TAB LF SPACE/TAB LF is invalid IMP sequence");
+//							throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
+						} else {
+							char fourth = nextOpCode();
+							if (fourth == LF) {
+//								throw new IllegalStateException("TAB LF SPACE/TAB LF is invalid IMP sequence");
+							}
 						}
 					}
 				} else {	// LF
@@ -428,9 +457,11 @@ public class WhitespaceInterpreter {
 						String label = extractLabel(this);
 						if (third == SPACE) {
 							if (labels.containsKey(label)) {
-								throw new IllegalStateException("Duplicated label found for " + label);
+								labels.get(label).addDeclarationCount();
+//								throw new IllegalStateException("Duplicated label found for " + label);
+							} else {
+								labels.put(label, new Label(label, getInstructionPointer()));
 							}
-							labels.put(label, getInstructionPointer());
 						} 
 					} else if (second == TAB) {
 						char third = nextOpCode();
@@ -440,7 +471,7 @@ public class WhitespaceInterpreter {
 					} else {		// LF
 						char third = nextOpCode();
 						if (third != LF) {
-							throw new IllegalStateException("LF LF SPACE/TAB is invalid IMP sequence");
+//							throw new IllegalStateException("LF LF SPACE/TAB is invalid IMP sequence");
 						}
 					}
 				}
@@ -452,7 +483,7 @@ public class WhitespaceInterpreter {
 
 	private static class Code implements ICode {
 		private List<Character> code = new ArrayList<>();
-		private Map<String, Integer> labels;
+		private Map<String, Label> labels;
 		private int ip = 0;
 		
 		private Stack<Integer> subStack = new Stack<>();
@@ -464,7 +495,7 @@ public class WhitespaceInterpreter {
 			}
 			
 			CodeScanner scanner = new CodeScanner(opcodes);
-			labels = scanner.validateAndExtractLabels();
+			labels = scanner.extractLabels();
 		}
 		
 		@Override
@@ -485,7 +516,8 @@ public class WhitespaceInterpreter {
 				throw new IllegalStateException("Calling non-existent subroutine at " + label);
 			}
 			subStack.push(ip);
-			ip = labels.get(label);
+
+			jump(label);
 		}
 		
 		public void returnFromSub() {
@@ -496,8 +528,12 @@ public class WhitespaceInterpreter {
 			if (!labels.containsKey(label)) {
 				throw new IllegalStateException("Calling non-existent jump at " + label);
 			}
-			ip = labels.get(label);
+
+			Label match = labels.get(label);
+			if (match.getDeclarations() > 1) {
+				throw new IllegalStateException("Duplicated label found for " + label);
+			}
+			ip = match.getIp();
 		}
 	}
-
 }

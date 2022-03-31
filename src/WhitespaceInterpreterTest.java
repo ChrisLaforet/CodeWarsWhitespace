@@ -3,7 +3,9 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 public class WhitespaceInterpreterTest {
 
@@ -197,7 +199,18 @@ public class WhitespaceInterpreterTest {
 	}
 
 	@Test
-	public void testPreBufferedEnd() {
-		assertEquals("1", WhitespaceInterpreter.execute("\n\n\n", null));
+	public void testUnknownInstruction() {
+		OutputStream stream = new ByteArrayOutputStream();
+		try {
+			for (byte b : "12".getBytes()) {
+				stream.write(b);
+			}
+			assertEquals("",
+					WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t   \t \n\t\n\t\t   \t \n\t\t\t\t\n \t   \t\t\n\t\n\t\t   \t\t\n\t\t\n\n\n",
+							null, stream));
+		} catch (Exception ex) {
+
+		}
+		assertEquals("12", stream.toString());
 	}
 }
