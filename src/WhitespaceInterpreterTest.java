@@ -3,6 +3,9 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 public class WhitespaceInterpreterTest {
 
 	@Test
@@ -96,6 +99,14 @@ public class WhitespaceInterpreterTest {
 	@Test
 	public void given10_whenStoredAtAddress3AndPushedBackOnStack_thenYields10() {
 		assertEquals("10", WhitespaceInterpreter.execute("   \t\t\n   \t \t \n\t\t    \t\t\n\t\t\t\t\n \t\n\n\n", null));
+	}
 
+	@Test
+	public void givenInputStream_whenReadingCharacters_thenOutputsCharactersInOrder() {
+		final String characters = "B8";
+		final InputStream inputStream = new ByteArrayInputStream(characters.toString().getBytes());
+		assertEquals(characters,
+				WhitespaceInterpreter.execute("   \t\n\t\n\t    \t \n\t\n\t    \t\n\t\t\t\t\n     \t \n\t\t\t\t\n  \n\n\n",
+						inputStream));
 	}
 }

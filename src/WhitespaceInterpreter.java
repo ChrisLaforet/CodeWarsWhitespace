@@ -1,6 +1,5 @@
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
@@ -35,7 +34,11 @@ public class WhitespaceInterpreter {
 		}
 		
 		final Stack<Character> instructions = prepareInstructionStream(code);
-		return execute(instructions, input);
+		Reader reader = null;
+		if (input != null) {
+			reader = new InputStreamReader(input, Charset.defaultCharset());
+		}
+		return execute(instructions, reader);
 	}
 	
 	public static String execute(String code, InputStream input, OutputStream output) {
@@ -61,7 +64,7 @@ public class WhitespaceInterpreter {
 		return instructions;
 	}
 	
-	private static String execute(Stack<Character> instructions, InputStream input) {
+	private static String execute(Stack<Character> instructions, Reader reader) {
 		final Stack<Integer> stack = new Stack<>();
 		final Map<Integer, Integer> heap = new HashMap<>();
 		final StringBuilder output = new StringBuilder();
@@ -69,14 +72,14 @@ public class WhitespaceInterpreter {
 		while (!instructions.isEmpty()) {
 			char imp = instructions.pop();
 			if (imp == SPACE) {
-				processSpace(instructions, stack, heap, input, output);
+				processSpace(instructions, stack, heap, reader, output);
 			} else if (imp == LF) {
-				boolean endProgram = processLF(instructions, stack, heap, input, output);
+				boolean endProgram = processLF(instructions, stack, heap, reader, output);
 				if (endProgram) {
 					break;
 				}
 			} else {
-				processTab(instructions, stack, heap, input, output);
+				processTab(instructions, stack, heap, reader, output);
 			}			
 		}
 
@@ -104,7 +107,7 @@ public class WhitespaceInterpreter {
 	}
 	
 	private static void processSpace(Stack<Character> instructions, Stack<Integer> stack,
-			Map<Integer, Integer> heap, InputStream input, StringBuilder output) {
+			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
 		char command = instructions.pop();
 		if (command == SPACE) {
 			stack.push(extractNumber(instructions));
@@ -144,7 +147,7 @@ public class WhitespaceInterpreter {
 	}
 	
 	private static boolean processLF(Stack<Character> instructions, Stack<Integer> stack,
-			Map<Integer, Integer> heap, InputStream input, StringBuilder output) {
+			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
 		char command = instructions.pop();
 		if (command == SPACE) {
 			stack.push(extractNumber(instructions));
@@ -172,7 +175,7 @@ public class WhitespaceInterpreter {
 	}
 	
 	private static void processTab(Stack<Character> instructions, Stack<Integer> stack,
-			Map<Integer, Integer> heap, InputStream input, StringBuilder output) {
+			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
 		char command = instructions.pop();
 		if (command == SPACE) {
 			char subCommand = instructions.pop();
@@ -203,7 +206,7 @@ public class WhitespaceInterpreter {
 				throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
 
 			} else {
-				
+				processTabLFTab(instructions, stack, heap, reader);
 			}
 		}
 	}
@@ -217,7 +220,23 @@ public class WhitespaceInterpreter {
 			output.append(Integer.toString(stack.pop()));
 		} else {
 			throw new IllegalStateException("TAB LF SPACE LF is invalid IMP sequence");
+		}
+	}
 
+	private static void processTabLFTab(Stack<Character> instructions, Stack<Integer> stack,
+										Map<Integer, Integer> heap, Reader reader) {
+		char opcode = instructions.pop();
+		if (opcode == SPACE) {
+			int address = stack.pop();
+			try {
+				int ch = reader.read();
+				heap.put(address, ch);
+			} catch (IOException ex) {
+				throw new IllegalStateException("IOException reading character from input");
+			}
+		} else if (opcode == TAB) {
+		} else {
+			throw new IllegalStateException("TAB LF TAB LF is invalid IMP sequence");
 		}
 	}
 	
