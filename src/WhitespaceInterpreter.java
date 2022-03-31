@@ -172,15 +172,19 @@ public class WhitespaceInterpreter {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
 				extractLabel(code);
+			} else if (subCommand == TAB) {
+				code.callSub(extractLabel(code));
+			} else {
+// jump				
 			}
 		} else if (command == TAB) {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				
+// jump if 0 (JZ)				
 			} else if (subCommand == LF) {
-				
+				code.returnFromSub();
 			} else {
-				
+// jump if negative (JLZ)				
 			}
 		} else if (command == LF) {
 			char subCommand = code.nextOpCode();
@@ -331,6 +335,8 @@ public class WhitespaceInterpreter {
 		private List<Character> code = new ArrayList<>();
 		private Map<String, Integer> labels = new HashMap<>();
 		private int ip = 0;
+		
+		private Stack<Integer> subStack = new Stack<>();
 
 		public Code(String rawCode) {
 			final String opcodes = reduceCode(rawCode);
@@ -364,6 +370,18 @@ public class WhitespaceInterpreter {
 		
 		public boolean isCompleted() {
 			return ip >= code.size();
+		}
+		
+		public void callSub(String label) {
+			if (!labels.containsKey(label)) {
+				throw new IllegalStateException("Calling non-existent subroutine at " + label);
+			}
+			subStack.push(ip);
+			ip = labels.get(label);
+		}
+		
+		public void returnFromSub() {
+			ip = subStack.pop();
 		}
 	}
 

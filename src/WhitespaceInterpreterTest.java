@@ -149,4 +149,10 @@ public class WhitespaceInterpreterTest {
 	public void givenSetLabel_whenParsing_thenEndsWithoutError() {
 		assertEquals("", WhitespaceInterpreter.execute("\n   \t    \t\t\n\n\n\n", null));
 	}
+	
+	@Test
+	public void givenSetLabel_whenCalledAsSubroutine_thenExecutesAndReturns() {
+		assertEquals("11", WhitespaceInterpreter.execute("\n \t\t\t\n\n \t\t\t\n\n\n\n\n  \t\t\n   \t\n\t\n \t\n\t\n", null));
+
+	}
 }
