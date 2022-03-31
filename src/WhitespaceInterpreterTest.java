@@ -118,4 +118,13 @@ public class WhitespaceInterpreterTest {
 				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
 						inputStream));
 	}
+
+	@Test
+	public void givenInputStreamWithOctal_whenReadingNumber_thenOutputsNumber() {
+		final String characters = "076512\n";
+		final InputStream inputStream = new ByteArrayInputStream(characters.toString().getBytes());
+		assertEquals("32074",
+				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
+						inputStream));
+	}
 }
