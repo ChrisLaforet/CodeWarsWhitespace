@@ -7,7 +7,6 @@ public class WhitespaceInterpreter {
 	private static final char LF = 'n';
 	private static final char TAB = 't';
 	private static final char SPACE = 's';
-	private static final String MARK_LABEL_SEQUENCE = "nss";
 
 	// transforms space characters to ['s','t','n'] chars;
 	public static String unbleach(String code) {
@@ -28,6 +27,10 @@ public class WhitespaceInterpreter {
   	}
 
 	public static String execute(String code, InputStream input) {
+		return execute(code, input, null);
+	}
+	
+	public static String execute(String code, InputStream input, OutputStream output) {
 		if (code == null || code.isEmpty()) {
 			throw new IllegalStateException("Code is null");
 		}
@@ -37,25 +40,10 @@ public class WhitespaceInterpreter {
 		if (input != null) {
 			reader = new InputStreamReader(input, Charset.defaultCharset());
 		}
-		return execute(instructions, reader);
+		return execute(instructions, reader, output);
 	}
 	
-	public static String execute(String code, InputStream input, OutputStream output) {
-	    final String response = execute(code, input);
-	    if (output != null) {
-	    	try {
-			    for (byte b : response.getBytes()) {
-			    	output.write(b);
-			    }
-			    output.flush();
-	    	} catch (IOException ex) {
-	    		throw new RuntimeException("Error writing to output stream");
-	    	}
-	    }
-	    return response;
-	}
-	
-	private static String execute(Code code, Reader reader) {
+	private static String execute(Code code, Reader reader, OutputStream outputStream) {
 		final Stack<Integer> stack = new Stack<>();
 		final Map<Integer, Integer> heap = new HashMap<>();
 		final StringBuilder output = new StringBuilder();
@@ -72,7 +60,7 @@ public class WhitespaceInterpreter {
 					break;
 				}
 			} else {
-				processTab(code, stack, heap, reader, output);
+				processTab(code, stack, heap, reader, output, outputStream);
 			}			
 		}
 
@@ -112,18 +100,6 @@ public class WhitespaceInterpreter {
 			label.append(ch);
 		}
 		return label.toString();
-	}
-	
-	private static String extractLabel(String opcodes, int offset) {
-		final StringBuilder label = new StringBuilder();
-		while (offset < opcodes.length()) {
-			char ch = opcodes.charAt(offset++);
-			if (ch == LF) {
-				break;
-			}
-			label.append(ch);
-		}
-		return label.toString();	
 	}
 	
 	private static void processSpace(Code code, Stack<Integer> stack,
@@ -210,14 +186,15 @@ public class WhitespaceInterpreter {
 	}
 	
 	private static void processTab(Code code, Stack<Integer> stack,
-			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
+			Map<Integer, Integer> heap, Reader reader, 
+			StringBuilder output, OutputStream outputStream) {
 		char command = code.nextOpCode();
 		if (command == SPACE) {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				processTabSpaceSpace(code, stack, output);
+				processTabSpaceSpace(code, stack);
 			} else if (subCommand == TAB) {
-				processTabSpaceTab(code, stack, output);
+				processTabSpaceTab(code, stack);
 			} else {
 				
 			}
@@ -236,7 +213,7 @@ public class WhitespaceInterpreter {
 		} else if (command == LF) {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				processTabLFSpace(code, stack, output);
+				processTabLFSpace(code, stack, output, outputStream);
 			} else if (subCommand == LF) {
 				throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
 			} else {
@@ -245,13 +222,29 @@ public class WhitespaceInterpreter {
 		}
 	}
 	
+	private static void emitString(String string, StringBuilder output, OutputStream outputStream) {
+		output.append(string);
+	    if (outputStream != null) {
+	    	// I cannot believe the foolishness of depending on output for tests when
+	    	// an exceptional circumstance exists!  Oh well...
+	    	try {
+			    for (byte b : string.getBytes()) {
+			    	outputStream.write(b);
+			    }
+			    outputStream.flush();
+	    	} catch (IOException ex) {
+	    		throw new RuntimeException("Error writing to output stream");
+	    	}
+	    }
+	}
+	
 	private static void processTabLFSpace(Code code, Stack<Integer> stack,
-			StringBuilder output) {
+			StringBuilder output, OutputStream outputStream) {
 		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
-			output.append(Character.toString(stack.pop()));
+			emitString(Character.toString(stack.pop()), output, outputStream);
 		} else if (opcode == TAB) {
-			output.append(Integer.toString(stack.pop()));
+			emitString(Integer.toString(stack.pop()), output, outputStream);
 		} else {
 			throw new IllegalStateException("TAB LF SPACE LF is invalid IMP sequence");
 		}
@@ -306,8 +299,7 @@ public class WhitespaceInterpreter {
 		}
 	}
 	
-	private static void processTabSpaceSpace(Code code, Stack<Integer> stack,
-			StringBuilder output) {
+	private static void processTabSpaceSpace(Code code, Stack<Integer> stack) {
 		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
 			stack.push(stack.pop() + stack.pop());
@@ -323,8 +315,7 @@ public class WhitespaceInterpreter {
 	}
 	
 	
-	private static void processTabSpaceTab(Code code, Stack<Integer> stack,
-			StringBuilder output) {
+	private static void processTabSpaceTab(Code code, Stack<Integer> stack) {
 		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
 			int divisor = stack.pop();
