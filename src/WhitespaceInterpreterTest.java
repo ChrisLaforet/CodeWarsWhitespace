@@ -185,4 +185,9 @@ public class WhitespaceInterpreterTest {
 	public void jumpBackOnZero() {
 		assertEquals("123", WhitespaceInterpreter.execute("   \t\n   \t\t\n   \n   \t \n   \n   \t\n\n  \n\t\n \t\n\t \n\n\n\n", null));
 	}
+	
+	@Test
+	public void jumpForwardOnZero() {
+		assertEquals("321", WhitespaceInterpreter.execute("   \n   \t\n   \t \n   \t\t\n\n  \n\t\n \t \n \n\t  \n\n \n\n\n   \n\n\n\n", null));
+	}
 }

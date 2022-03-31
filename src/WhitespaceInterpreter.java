@@ -180,16 +180,18 @@ public class WhitespaceInterpreter {
 		} else if (command == TAB) {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				// jump if 0 (JZ)				
+				// jump if 0 (JZ)
+				String label = extractLabel(code);
 				if (stack.pop() == 0) {
-					code.jump(extractLabel(code));
+					code.jump(label);
 				}
 			} else if (subCommand == LF) {
 				code.returnFromSub();
 			} else {
 				// jump if negative (JLZ)
+				String label = extractLabel(code);
 				if (stack.pop() < 0) {
-					code.jump(extractLabel(code));
+					code.jump(label);
 				}
 			}
 		} else if (command == LF) {
