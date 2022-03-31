@@ -195,4 +195,9 @@ public class WhitespaceInterpreterTest {
 	public void testSlideN3() {
 		assertEquals("", WhitespaceInterpreter.execute("   \t\n   \t \n   \t\t\n \t\n\t\t     \n\t\n \t\t\n \t\n\n\n", null));
 	}
+
+	@Test
+	public void testPreBufferedEnd() {
+		assertEquals("1", WhitespaceInterpreter.execute("\n\n\n", null));
+	}
 }

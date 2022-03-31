@@ -34,6 +34,15 @@ public class WhitespaceInterpreter {
 		if (code == null || code.isEmpty()) {
 			throw new IllegalStateException("Code is null");
 		}
+
+		// preflush buffer
+		if (output != null) {
+			try {
+				output.flush();
+			} catch (IOException ex) {
+				throw new RuntimeException("Error writing to output stream");
+			}
+		}
 		
 		final Code instructions = new Code(code);
 		Reader reader = null;
@@ -314,7 +323,6 @@ public class WhitespaceInterpreter {
 		}
 	}
 	
-	
 	private static void processTabSpaceTab(Code code, Stack<Integer> stack) {
 		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
@@ -371,7 +379,6 @@ public class WhitespaceInterpreter {
 			return ip;
 		}
 
-		
 		public Map<String, Integer> validateAndExtractLabels() {
 			final Map<String, Integer> labels = new HashMap<>();
 			while (!isCompleted()) {
