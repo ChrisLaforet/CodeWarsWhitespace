@@ -31,7 +31,7 @@ public class WhitespaceInterpreter {
 			throw new IllegalStateException("Code is null");
 		}
 		
-		final Stack<Character> instructions = prepareInstructionStream(code);
+		final Code instructions = new Code(code);
 		Reader reader = null;
 		if (input != null) {
 			reader = new InputStreamReader(input, Charset.defaultCharset());
@@ -53,33 +53,25 @@ public class WhitespaceInterpreter {
 	    }
 	    return response;
 	}
-
-	private static Stack<Character> prepareInstructionStream(String code) {
-		final Stack<Character> instructions = new Stack<>();
-		for (char instruction : reduceCode(code).toCharArray()) {
-			instructions.add(0,instruction);
-		}
-		return instructions;
-	}
 	
-	private static String execute(Stack<Character> instructions, Reader reader) {
+	private static String execute(Code code, Reader reader) {
 		final Stack<Integer> stack = new Stack<>();
 		final Map<Integer, Integer> heap = new HashMap<>();
 		final StringBuilder output = new StringBuilder();
 
 		boolean cleanTermination = false;
-		while (!instructions.isEmpty()) {
-			char imp = instructions.pop();
+		while (!code.isCompleted()) {
+			char imp = code.nextOpCode();
 			if (imp == SPACE) {
-				processSpace(instructions, stack, heap, reader, output);
+				processSpace(code, stack, heap, reader, output);
 			} else if (imp == LF) {
-				boolean endProgram = processLF(instructions, stack, heap, reader, output);
+				boolean endProgram = processLF(code, stack, heap, reader, output);
 				if (endProgram) {
 					cleanTermination = true;
 					break;
 				}
 			} else {
-				processTab(instructions, stack, heap, reader, output);
+				processTab(code, stack, heap, reader, output);
 			}			
 		}
 
@@ -89,8 +81,8 @@ public class WhitespaceInterpreter {
 		return output.toString();		
 	}
 	
-	private static int extractNumber(Stack<Character> instructions) {
-		char sign = instructions.pop();
+	private static int extractNumber(Code code) {
+		char sign = code.nextOpCode();
 		if (sign == LF) {
 			throw new IllegalStateException("Numbers must start with a sign at minimum");
 		}
@@ -98,7 +90,7 @@ public class WhitespaceInterpreter {
 		
 		final StringBuilder binary = new StringBuilder();
 		while (true) {
-			char bit = instructions.pop();
+			char bit = code.nextOpCode();
 			if (bit == LF) {
 				break;
 			}
@@ -109,19 +101,19 @@ public class WhitespaceInterpreter {
 		return number * (isNegative ? -1 : 1);
 	}
 	
-	private static void processSpace(Stack<Character> instructions, Stack<Integer> stack,
+	private static void processSpace(Code code, Stack<Integer> stack,
 			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
-		char command = instructions.pop();
+		char command = code.nextOpCode();
 		if (command == SPACE) {
-			stack.push(extractNumber(instructions));
+			stack.push(extractNumber(code));
 		} else if (command == TAB) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				int index = extractNumber(instructions);	// Duplicate the nth value from the top of the stack and push onto the stack
+				int index = extractNumber(code);	// Duplicate the nth value from the top of the stack and push onto the stack
 				int stackIndex = (stack.size() - 1) - index;
 				stack.push(stack.get(stackIndex));
 			} else if (subCommand == LF) {
-				int itemCount = extractNumber(instructions);	// Discard the top n values below the top of the stack from the stack
+				int itemCount = extractNumber(code);	// Discard the top n values below the top of the stack from the stack
 				int top = stack.pop();
 				if (itemCount >= stack.size()) {
 					throw new IllegalStateException("Discard elements from stack underflow");
@@ -134,7 +126,7 @@ public class WhitespaceInterpreter {
 				throw new IllegalStateException("SPACE TAB TAB is invalid IMP sequence");
 			}
 		} else if (command == LF) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
 				stack.push(stack.peek());		// duplicate top of stack
 			} else if (subCommand == LF) {
@@ -148,13 +140,13 @@ public class WhitespaceInterpreter {
 		}
 	}
 	
-	private static boolean processLF(Stack<Character> instructions, Stack<Integer> stack,
+	private static boolean processLF(Code code, Stack<Integer> stack,
 			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
-		char command = instructions.pop();
+		char command = code.nextOpCode();
 		if (command == SPACE) {
-			stack.push(extractNumber(instructions));
+			stack.push(extractNumber(code));
 		} else if (command == TAB) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
 				
 			} else if (subCommand == LF) {
@@ -163,7 +155,7 @@ public class WhitespaceInterpreter {
 				
 			}
 		} else if (command == LF) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
 				throw new IllegalStateException("LF LF SPACE is invalid IMP sequence");
 			} else if (subCommand == LF) {
@@ -176,20 +168,20 @@ public class WhitespaceInterpreter {
 		return false;
 	}
 	
-	private static void processTab(Stack<Character> instructions, Stack<Integer> stack,
+	private static void processTab(Code code, Stack<Integer> stack,
 			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
-		char command = instructions.pop();
+		char command = code.nextOpCode();
 		if (command == SPACE) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				processTabSpaceSpace(instructions, stack, output);
+				processTabSpaceSpace(code, stack, output);
 			} else if (subCommand == TAB) {
-				processTabSpaceTab(instructions, stack, output);
+				processTabSpaceTab(code, stack, output);
 			} else {
 				
 			}
 		} else if (command == TAB) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
 				int value = stack.pop();
 				int address = stack.pop();
@@ -201,20 +193,20 @@ public class WhitespaceInterpreter {
 				stack.push(heap.get(address));
 			}
 		} else if (command == LF) {
-			char subCommand = instructions.pop();
+			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-				processTabLFSpace(instructions, stack, output);
+				processTabLFSpace(code, stack, output);
 			} else if (subCommand == LF) {
 				throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
 			} else {
-				processTabLFTab(instructions, stack, heap, reader);
+				processTabLFTab(code, stack, heap, reader);
 			}
 		}
 	}
 	
-	private static void processTabLFSpace(Stack<Character> instructions, Stack<Integer> stack,
+	private static void processTabLFSpace(Code code, Stack<Integer> stack,
 			StringBuilder output) {
-		char opcode = instructions.pop();
+		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
 			output.append(Character.toString(stack.pop()));
 		} else if (opcode == TAB) {
@@ -253,9 +245,9 @@ public class WhitespaceInterpreter {
 		return Integer.parseInt(number, radix);
 	}
 
-	private static void processTabLFTab(Stack<Character> instructions, Stack<Integer> stack,
+	private static void processTabLFTab(Code code, Stack<Integer> stack,
 										Map<Integer, Integer> heap, Reader reader) {
-		char opcode = instructions.pop();
+		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
 			int address = stack.pop();
 			try {
@@ -273,9 +265,9 @@ public class WhitespaceInterpreter {
 		}
 	}
 	
-	private static void processTabSpaceSpace(Stack<Character> instructions, Stack<Integer> stack,
+	private static void processTabSpaceSpace(Code code, Stack<Integer> stack,
 			StringBuilder output) {
-		char opcode = instructions.pop();
+		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
 			stack.push(stack.pop() + stack.pop());
 		} else if (opcode == TAB) {
@@ -290,9 +282,9 @@ public class WhitespaceInterpreter {
 	}
 	
 	
-	private static void processTabSpaceTab(Stack<Character> instructions, Stack<Integer> stack,
+	private static void processTabSpaceTab(Code code, Stack<Integer> stack,
 			StringBuilder output) {
-		char opcode = instructions.pop();
+		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
 			int dividend = stack.pop();
 			int divisor = stack.pop();
@@ -306,24 +298,27 @@ public class WhitespaceInterpreter {
 		}
 	}
 
-	private static class Label {
-		int label;
-		int address;
-
-		public Label(int label, int address) {
-			this.label = label;
-			this.address = address;
-		}
-	}
 
 	private static class Code {
 		List<Character> code = new ArrayList<>();
 		Map<Integer, Integer> labels = new HashMap<>();
+		int ip = 0;
 
-		public Code(String opcodes) {
-			for (char opcode : opcodes.toCharArray()) {
+		public Code(String rawCode) {
+			for (char opcode : reduceCode(rawCode).toCharArray()) {
 				code.add(opcode);
 			}
+		}
+		
+		public char nextOpCode() {
+			if (isCompleted()) {
+				throw new IllegalStateException("Request for opcode beyond code boundaries");
+			}
+			return code.get(ip++);
+		}
+		
+		public boolean isCompleted() {
+			return ip >= code.size();
 		}
 	}
 
