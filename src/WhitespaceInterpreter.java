@@ -1,8 +1,6 @@
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class WhitespaceInterpreter {
 
@@ -26,7 +24,7 @@ public class WhitespaceInterpreter {
 		  }
 	  }
 	  return unbleach(sb.toString());
-  }
+  	}
 
 	public static String execute(String code, InputStream input) {
 		if (code == null || code.isEmpty()) {
@@ -126,11 +124,10 @@ public class WhitespaceInterpreter {
 				int itemCount = extractNumber(instructions);	// Discard the top n values below the top of the stack from the stack
 				int top = stack.pop();
 				if (itemCount >= stack.size()) {
-					stack.clear();
-				} else {
-					for (int count = 0; count < itemCount; count++) {
-						stack.pop();
-					}
+					throw new IllegalStateException("Discard elements from stack underflow");
+				}
+				for (int count = 0; count < itemCount; count++) {
+					stack.pop();
 				}
 				stack.push(top);
 			} else {
@@ -306,6 +303,27 @@ public class WhitespaceInterpreter {
 			stack.push(dividend % divisor);
 		} else {
 			throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
+		}
+	}
+
+	private static class Label {
+		int label;
+		int address;
+
+		public Label(int label, int address) {
+			this.label = label;
+			this.address = address;
+		}
+	}
+
+	private static class Code {
+		List<Character> code = new ArrayList<>();
+		Map<Integer, Integer> labels = new HashMap<>();
+
+		public Code(String opcodes) {
+			for (char opcode : opcodes.toCharArray()) {
+				code.add(opcode);
+			}
 		}
 	}
 
