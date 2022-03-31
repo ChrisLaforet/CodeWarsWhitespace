@@ -175,7 +175,7 @@ public class WhitespaceInterpreter {
 			} else if (subCommand == TAB) {
 				code.callSub(extractLabel(code));
 			} else {
-// jump				
+				code.jump(extractLabel(code));
 			}
 		} else if (command == TAB) {
 			char subCommand = code.nextOpCode();
@@ -382,6 +382,13 @@ public class WhitespaceInterpreter {
 		
 		public void returnFromSub() {
 			ip = subStack.pop();
+		}
+		
+		public void jump(String label) {
+			if (!labels.containsKey(label)) {
+				throw new IllegalStateException("Calling non-existent jump at " + label);
+			}
+			ip = labels.get(label);
 		}
 	}
 

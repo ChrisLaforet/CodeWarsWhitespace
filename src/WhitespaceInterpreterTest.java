@@ -155,4 +155,10 @@ public class WhitespaceInterpreterTest {
 		assertEquals("11", WhitespaceInterpreter.execute("\n \t\t\t\n\n \t\t\t\n\n\n\n\n  \t\t\n   \t\n\t\n \t\n\t\n", null));
 
 	}
+	
+	@Test
+	public void givenSetLabel_whenJumpCalled_thenExecutesJumpCodeAndTerminates() {
+		assertEquals("-12", WhitespaceInterpreter.execute("\n \n\t\t\n   \t\t  \n\t\n \t\n\n\n\n  \t\t\n  \t\t\t  \n\t\n \t\n\n\n", null));
+
+	}
 }
