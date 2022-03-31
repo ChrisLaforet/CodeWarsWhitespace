@@ -109,4 +109,13 @@ public class WhitespaceInterpreterTest {
 				WhitespaceInterpreter.execute("   \t\n\t\n\t    \t \n\t\n\t    \t\n\t\t\t\t\n     \t \n\t\t\t\t\n  \n\n\n",
 						inputStream));
 	}
+
+	@Test
+	public void givenInputStreamWithDecimal_whenReadingNumber_thenOutputsNumber() {
+		final String characters = "123\n";
+		final InputStream inputStream = new ByteArrayInputStream(characters.toString().getBytes());
+		assertEquals(characters.trim(),
+				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
+						inputStream));
+	}
 }

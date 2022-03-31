@@ -69,6 +69,7 @@ public class WhitespaceInterpreter {
 		final Map<Integer, Integer> heap = new HashMap<>();
 		final StringBuilder output = new StringBuilder();
 
+		boolean cleanTermination = false;
 		while (!instructions.isEmpty()) {
 			char imp = instructions.pop();
 			if (imp == SPACE) {
@@ -76,6 +77,7 @@ public class WhitespaceInterpreter {
 			} else if (imp == LF) {
 				boolean endProgram = processLF(instructions, stack, heap, reader, output);
 				if (endProgram) {
+					cleanTermination = true;
 					break;
 				}
 			} else {
@@ -83,6 +85,9 @@ public class WhitespaceInterpreter {
 			}			
 		}
 
+		if (!cleanTermination) {
+			throw new IllegalStateException("Unclean termination");
+		}
 		return output.toString();		
 	}
 	
@@ -204,7 +209,6 @@ public class WhitespaceInterpreter {
 				processTabLFSpace(instructions, stack, output);
 			} else if (subCommand == LF) {
 				throw new IllegalStateException("TAB LF LF is invalid IMP sequence");
-
 			} else {
 				processTabLFTab(instructions, stack, heap, reader);
 			}
@@ -223,6 +227,35 @@ public class WhitespaceInterpreter {
 		}
 	}
 
+	private static int readNumber(Reader reader) {
+		final StringBuilder sb = new StringBuilder();
+		try {
+			while (true) {
+				int ch = reader.read();
+				if (ch == -1 || ch == '\n') {
+					break;
+				}
+				sb.append((char)ch);
+			}
+		} catch (IOException ex) {
+			throw new IllegalStateException("IOException reading number from input");
+		}
+
+		String number = sb.toString();
+		int radix = 10;
+		if (number.startsWith("0b")) {
+			number = number.substring(2);
+			radix = 2;
+		} else if (number.startsWith("0x")) {
+			number = number.substring(2);
+			radix = 16;
+		} else if (number.length() > 1 && number.startsWith("0")) {
+			number = number.substring(1);
+			radix = 8;
+		}
+		return Integer.parseInt(number, radix);
+	}
+
 	private static void processTabLFTab(Stack<Character> instructions, Stack<Integer> stack,
 										Map<Integer, Integer> heap, Reader reader) {
 		char opcode = instructions.pop();
@@ -235,6 +268,9 @@ public class WhitespaceInterpreter {
 				throw new IllegalStateException("IOException reading character from input");
 			}
 		} else if (opcode == TAB) {
+			int address = stack.pop();
+			int value = readNumber(reader);
+			heap.put(address, value);
 		} else {
 			throw new IllegalStateException("TAB LF TAB LF is invalid IMP sequence");
 		}
