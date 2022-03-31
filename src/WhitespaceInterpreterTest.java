@@ -104,7 +104,7 @@ public class WhitespaceInterpreterTest {
 	@Test
 	public void givenInputStream_whenReadingCharacters_thenOutputsCharactersInOrder() {
 		final String characters = "B8";
-		final InputStream inputStream = new ByteArrayInputStream(characters.toString().getBytes());
+		final InputStream inputStream = new ByteArrayInputStream(characters.getBytes());
 		assertEquals(characters,
 				WhitespaceInterpreter.execute("   \t\n\t\n\t    \t \n\t\n\t    \t\n\t\t\t\t\n     \t \n\t\t\t\t\n  \n\n\n",
 						inputStream));
@@ -113,7 +113,7 @@ public class WhitespaceInterpreterTest {
 	@Test
 	public void givenInputStreamWithDecimal_whenReadingNumber_thenOutputsNumber() {
 		final String characters = "123\n";
-		final InputStream inputStream = new ByteArrayInputStream(characters.toString().getBytes());
+		final InputStream inputStream = new ByteArrayInputStream(characters.getBytes());
 		assertEquals(characters.trim(),
 				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
 						inputStream));
@@ -122,8 +122,26 @@ public class WhitespaceInterpreterTest {
 	@Test
 	public void givenInputStreamWithOctal_whenReadingNumber_thenOutputsNumber() {
 		final String characters = "076512\n";
-		final InputStream inputStream = new ByteArrayInputStream(characters.toString().getBytes());
+		final InputStream inputStream = new ByteArrayInputStream(characters.getBytes());
 		assertEquals("32074",
+				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
+						inputStream));
+	}
+
+	@Test
+	public void givenInputStreamWithHexadecimal_whenReadingNumber_thenOutputsNumber() {
+		final String characters = "0xD5F07\n";
+		final InputStream inputStream = new ByteArrayInputStream(characters.getBytes());
+		assertEquals("876295",
+				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
+						inputStream));
+	}
+
+	@Test
+	public void givenInputStreamWithBinary_whenReadingNumber_thenOutputsNumber() {
+		final String characters = "0b11000000000100100011\n";
+		final InputStream inputStream = new ByteArrayInputStream(characters.getBytes());
+		assertEquals("786723",
 				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
 						inputStream));
 	}
