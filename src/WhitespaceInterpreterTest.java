@@ -144,4 +144,9 @@ public class WhitespaceInterpreterTest {
 				WhitespaceInterpreter.execute("   \t\n\t\n\t\t   \t\n\t\t\t\t\n \t\n\n\n",
 						inputStream));
 	}
+	
+	@Test
+	public void givenSetLabel_whenParsing_thenEndsWithoutError() {
+		assertEquals("", WhitespaceInterpreter.execute("\n   \t    \t\t\n\n\n\n", null));
+	}
 }

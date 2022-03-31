@@ -7,6 +7,7 @@ public class WhitespaceInterpreter {
 	private static final char LF = 'n';
 	private static final char TAB = 't';
 	private static final char SPACE = 's';
+	private static final String MARK_LABEL_SEQUENCE = "nss";
 
 	// transforms space characters to ['s','t','n'] chars;
 	public static String unbleach(String code) {
@@ -101,6 +102,30 @@ public class WhitespaceInterpreter {
 		return number * (isNegative ? -1 : 1);
 	}
 	
+	private static String extractLabel(Code code) {
+		final StringBuilder label = new StringBuilder();
+		while (true) {
+			char ch = code.nextOpCode();
+			if (ch == LF) {
+				break;
+			}
+			label.append(ch);
+		}
+		return label.toString();
+	}
+	
+	private static String extractLabel(String opcodes, int offset) {
+		final StringBuilder label = new StringBuilder();
+		while (offset < opcodes.length()) {
+			char ch = opcodes.charAt(offset++);
+			if (ch == LF) {
+				break;
+			}
+			label.append(ch);
+		}
+		return label.toString();	
+	}
+	
 	private static void processSpace(Code code, Stack<Integer> stack,
 			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
 		char command = code.nextOpCode();
@@ -144,7 +169,10 @@ public class WhitespaceInterpreter {
 			Map<Integer, Integer> heap, Reader reader, StringBuilder output) {
 		char command = code.nextOpCode();
 		if (command == SPACE) {
-			stack.push(extractNumber(code));
+			char subCommand = code.nextOpCode();
+			if (subCommand == SPACE) {
+				extractLabel(code);
+			}
 		} else if (command == TAB) {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
@@ -300,13 +328,30 @@ public class WhitespaceInterpreter {
 
 
 	private static class Code {
-		List<Character> code = new ArrayList<>();
-		Map<Integer, Integer> labels = new HashMap<>();
-		int ip = 0;
+		private List<Character> code = new ArrayList<>();
+		private Map<String, Integer> labels = new HashMap<>();
+		private int ip = 0;
 
 		public Code(String rawCode) {
-			for (char opcode : reduceCode(rawCode).toCharArray()) {
+			final String opcodes = reduceCode(rawCode);
+			for (char opcode : opcodes.toCharArray()) {
 				code.add(opcode);
+			}
+			
+			extractPossibleLabels(opcodes);		
+		}
+
+		private void extractPossibleLabels(final String opcodes) {
+			int offset = 0;
+			while (true) {
+				int index = opcodes.indexOf(MARK_LABEL_SEQUENCE, offset);
+				if (index < 0) {
+					break;
+				}
+				String label = extractLabel(opcodes, index + MARK_LABEL_SEQUENCE.length());
+				labels.put(label, index + label.length() + MARK_LABEL_SEQUENCE.length() + 1);
+				
+				offset += MARK_LABEL_SEQUENCE.length();
 			}
 		}
 		
