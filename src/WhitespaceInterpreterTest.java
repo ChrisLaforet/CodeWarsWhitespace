@@ -76,8 +76,8 @@ public class WhitespaceInterpreterTest {
 	}
 
 	@Test
-	public void given10_when3IsSubtracted_thenYields7() {
-		assertEquals("7", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t  \t\t\n \t\n\n\n", null));
+	public void given3_when10IsSubtracted_thenYieldsMinus7() {
+		assertEquals("-7", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t  \t\t\n \t\n\n\n", null));
 	}
 	
 	@Test
@@ -87,12 +87,12 @@ public class WhitespaceInterpreterTest {
 	
 	@Test
 	public void given10_whenDividedBy2_thenYields5() {
-		assertEquals("5", WhitespaceInterpreter. execute("   \t \n   \t \t \n\t \t \t\n \t\n\n\n", null));
+		assertEquals("5", WhitespaceInterpreter. execute("   \t \t \n   \t \n\t \t \t\n \t\n\n\n", null));
 	}
 	
 	@Test
 	public void given10_whenModuloDividedBy3_thenYields1() {
-		assertEquals("1", WhitespaceInterpreter. execute("   \t\t\n   \t \t \n\t \t\t\t\n \t\n\n\n", null));
+		assertEquals("1", WhitespaceInterpreter. execute("   \t \t \n   \t\t\n\t \t\t\t\n \t\n\n\n", null));
 	}
 	
 	@Test
@@ -159,6 +159,30 @@ public class WhitespaceInterpreterTest {
 	@Test
 	public void givenSetLabel_whenJumpCalled_thenExecutesJumpCodeAndTerminates() {
 		assertEquals("-12", WhitespaceInterpreter.execute("\n \n\t\t\n   \t\t  \n\t\n \t\n\n\n\n  \t\t\n  \t\t\t  \n\t\n \t\n\n\n", null));
-
+	}
+	
+	@Test(expected = Exception.class)
+	public void divisionByZero() {
+		assertEquals("", WhitespaceInterpreter.execute("   \t   \n    \n\t \t \t\n \t\n\n\n", null));
+	}
+	
+	@Test(expected = Exception.class)
+	public void moduloByZero() {
+		assertEquals("", WhitespaceInterpreter.execute("   \t   \n    \n\t \t\t\t\n \t\n\n\n", null));
+	}
+	
+	@Test
+	public void floorDivide2() {
+		assertEquals("-3", WhitespaceInterpreter.execute("  \t\t   \n   \t\t\n\t \t \t\n \t\n\n\n", null));
+	}
+	
+	@Test
+	public void floorMod2() {
+		assertEquals("-1", WhitespaceInterpreter.execute("   \t \t\n  \t\t\t\n\t \t\t\t\n \t\n\n\n", null));
+	}
+	
+	@Test
+	public void jumpBackOnZero() {
+		assertEquals("123", WhitespaceInterpreter.execute("   \t\n   \t\t\n   \n   \t \n   \n   \t\n\n  \n\t\n \t\n\t \n\n\n\n", null));
 	}
 }

@@ -180,11 +180,17 @@ public class WhitespaceInterpreter {
 		} else if (command == TAB) {
 			char subCommand = code.nextOpCode();
 			if (subCommand == SPACE) {
-// jump if 0 (JZ)				
+				// jump if 0 (JZ)				
+				if (stack.pop() == 0) {
+					code.jump(extractLabel(code));
+				}
 			} else if (subCommand == LF) {
 				code.returnFromSub();
 			} else {
-// jump if negative (JLZ)				
+				// jump if negative (JLZ)
+				if (stack.pop() < 0) {
+					code.jump(extractLabel(code));
+				}
 			}
 		} else if (command == LF) {
 			char subCommand = code.nextOpCode();
@@ -193,7 +199,7 @@ public class WhitespaceInterpreter {
 			} else if (subCommand == LF) {
 				return true;
 			} else {
-				
+				throw new IllegalStateException("LF LF TAB is invalid IMP sequence");
 			}
 		}
 		
@@ -303,12 +309,12 @@ public class WhitespaceInterpreter {
 		if (opcode == SPACE) {
 			stack.push(stack.pop() + stack.pop());
 		} else if (opcode == TAB) {
-			int minuend = stack.pop();
 			int subtrahend = stack.pop();
+			int minuend = stack.pop();
 			stack.push(minuend - subtrahend);
 		} else {
-			int multiplicand = stack.pop();
 			int multiplier = stack.pop();
+			int multiplicand = stack.pop();
 			stack.push(multiplicand * multiplier);
 		}
 	}
@@ -318,13 +324,21 @@ public class WhitespaceInterpreter {
 			StringBuilder output) {
 		char opcode = code.nextOpCode();
 		if (opcode == SPACE) {
-			int dividend = stack.pop();
 			int divisor = stack.pop();
-			stack.push(dividend / divisor);
+			int dividend = stack.pop();
+			if (divisor == 0) {		// floating point divide by 0.0 doesn't fail!
+				throw new ArithmeticException("Divide by zero");
+			}
+			int result = (int)Math.floorDiv(dividend, divisor);
+			stack.push(result);
 		} else if (opcode == TAB) {
-			int dividend = stack.pop();
 			int divisor = stack.pop();
-			stack.push(dividend % divisor);
+			int dividend = stack.pop();
+			if (divisor == 0) {		// floating point divide by 0.0 doesn't fail!
+				throw new ArithmeticException("Divide by zero");
+			}
+			int result = (int)Math.floorMod(dividend, divisor);
+			stack.push(result);
 		} else {
 			throw new IllegalStateException("TAB SPACE TAB LF is invalid IMP sequence");
 		}
